@@ -13,6 +13,8 @@ mod staked;
 use staked::StakedCmd;
 pub mod transactions;
 use transactions::TransactionsCmd;
+mod tx;
+use tx::TxCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
@@ -31,6 +33,8 @@ pub enum ViewCmd {
     Sync,
     /// Get transaction hashes and block heights of spendable notes.
     ListTransactions(TransactionsCmd),
+    /// Displays a transaction's details by hash.
+    Tx(TxCmd),
 }
 
 impl ViewCmd {
@@ -42,6 +46,7 @@ impl ViewCmd {
             ViewCmd::Reset(_) => false,
             ViewCmd::Sync => true,
             ViewCmd::ListTransactions(transactions_cmd) => transactions_cmd.needs_sync(),
+            ViewCmd::Tx(tx_cmd) => tx_cmd.needs_sync(), 
         }
     }
 
@@ -52,6 +57,9 @@ impl ViewCmd {
         oblivious_client: &mut ObliviousQueryClient<Channel>,
     ) -> Result<()> {
         match self {
+            ViewCmd::Tx(tx_cmd) => {
+                tx_cmd.exec(full_viewing_key, view_client).await?;
+            }
             ViewCmd::ListTransactions(transactions_cmd) => {
                 transactions_cmd.exec(full_viewing_key, view_client).await?;
             }
