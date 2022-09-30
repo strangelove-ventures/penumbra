@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use client::Ics2Client;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::{genesis, View as _};
+use penumbra_proto::core::ibc::v1alpha1 as ibc_pb;
 use penumbra_storage::State;
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
@@ -49,6 +50,32 @@ impl IBCComponent {
             state: state.clone(),
         }
     }
+
+    #[instrument(name = "ibc", skip(self, ctx))]
+    pub async fn stateful_ics20_withdrawal_check(
+        &self,
+        ctx: Context,
+        withdrawal: Action::ICS20Withdrawal,
+    ) -> Result<()> {
+        // check that withdrawal timeout timestamp and height are not in the past
+        let block_time = self.get_block_timestamp().await?;
+        let block_height = self.get_block_height().await?;
+
+        if block_time > withdrawal.timeout_timestamp {
+            return Err(anyhow::anyhow!(
+                "withdrawal timeout timestamp is in the past"
+            ));
+        }
+        if block_height > withdrawal.timeout_height {
+            return Err(anyhow::anyhow!("withdrawal timeout height is in the past"));
+        }
+
+        // NOTE: the `value` is verified to originate from a well-formed spend in the balance
+        // commitment.
+        //
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -70,8 +97,12 @@ impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(tx, ctx))]
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         for action in tx.transaction_body.actions.iter() {
-            if let Action::ICS20Withdrawal { .. } = action {
-                return Err(anyhow::anyhow!("ics20 withdrawals not supported yet"));
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    // check that the destination chain address and chain ID are well-formed
+                    withdrawal.validate()?;
+                }
+                _ => {}
             }
         }
 
@@ -90,6 +121,16 @@ impl Component for IBCComponent {
             ));
         }
 
+        for action in tx.transaction_body.actions.iter() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    self.stateful_ics20_withdrawal_check(ctx.clone(), withdrawal)
+                        .await?;
+                }
+                _ => {}
+            }
+        }
+
         self.client.check_tx_stateful(ctx.clone(), tx).await?;
         self.connection.check_tx_stateful(ctx.clone(), tx).await?;
         self.channel.check_tx_stateful(ctx.clone(), tx).await?;
@@ -99,6 +140,19 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, ctx, tx))]
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        for action in tx.transaction_body.actions.iter() {
+            match action {
+                Action::ICS20Withdrawal(withdrawal) => {
+                    // Create an appropriate FungibleTokenPacketData from the action contents;
+                    let packet_data: ibc_pb::FungibleTokenPacketData = withdrawal.clone().into();
+
+                    // Commit the FTPD to penumbra using the correct namespace
+
+                    // Record the FTPD as not acknowledged yet, to allow us to handle timeouts
+                }
+                _ => {}
+            }
+        }
         self.client.execute_tx(ctx.clone(), tx).await;
         self.connection.execute_tx(ctx.clone(), tx).await;
         self.channel.execute_tx(ctx.clone(), tx).await;

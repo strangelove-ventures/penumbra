@@ -41,6 +41,8 @@ mod execution;
 mod stateful;
 mod stateless;
 
+use stateful::proof_verification::commit_packet;
+
 pub struct ICS4Channel {
     state: State,
 
@@ -51,6 +53,78 @@ impl ICS4Channel {
     #[instrument(name = "ics4_channel", skip(state, app_handler))]
     pub async fn new(state: State, app_handler: Box<dyn AppHandler>) -> Self {
         Self { state, app_handler }
+    }
+
+    /// send a packet on the specified source port and source channel.
+    ///
+    /// this commits the provided `data` to the namespace and format such that it is legible to a counterparty chain.
+    pub async fn send_packet(
+        &mut self,
+        ctx: Context,
+        source_port: &PortId,
+        source_channel: &ChannelId,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        let channel = self
+            .state
+            .get_channel(source_channel, source_port)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "channel {} on port {} does not exist",
+                    source_channel,
+                    source_port
+                )
+            })?;
+
+        if channel.state_matches(&ChannelState::Closed) {
+            return Err(anyhow::anyhow!(
+                "channel {} on port {} is closed",
+                source_channel,
+                source_port
+            ));
+        }
+
+        let connection = self
+            .state
+            .get_connection(&channel.connection_hops[0])
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("connection {} does not exist", channel.connection_hops[0])
+            })?;
+
+        // check that time timeout height hasn't already pased in the local client tracking the
+        // receiving chain
+        let sequence = self
+            .state
+            .get_send_sequence(source_channel, source_port)
+            .await?;
+
+        // increment send sequence counter
+        self.state
+            .put_send_sequence(source_channel, source_port, sequence + 1)
+            .await;
+
+        // store commitment to the packet data & packet timeout
+        let packet = Packet {
+            source_channel: source_channel.clone(),
+            source_port: source_port.clone(),
+            sequence: sequence.into(),
+
+            // TODO: figure these out(underspecified)
+            destination_port: None,
+            destination_channel: None,
+
+            data: data,
+            timeout_height: timeout_height,
+            timeout_timestamp: timeout_timestamp,
+        };
+
+        self.state.put_packet_commitment(&packet).await;
+
+        Ok(())
     }
 }
 
@@ -348,6 +422,11 @@ pub trait View: StateExt {
             .await
             .map(|sequence| sequence.unwrap_or(0))
     }
+    async fn get_send_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
+        self.get_proto::<u64>(state_key::seq_send(channel_id, port_id).into())
+            .await
+            .map(|sequence| sequence.unwrap_or(0))
+    }
     async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id).into(), sequence)
             .await;
@@ -368,6 +447,13 @@ pub trait View: StateExt {
         self.get_proto::<String>(state_key::packet_receipt(packet).into())
             .await
             .map(|res| res.is_some())
+    }
+    async fn put_packet_commitment(&self, packet: &Packet) {
+        let commitment_key = state_key::packet_commitment(packet);
+        let packet_hash = commit_packet(packet);
+
+        self.put_proto::<Vec<u8>>(commitment_key.into(), packet_hash)
+            .await;
     }
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
