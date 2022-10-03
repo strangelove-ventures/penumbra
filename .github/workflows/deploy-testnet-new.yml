@@ -32,7 +32,9 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v0
         with:
           cluster_name: testnet
+          project_id: penumbra-sl-testnet
           location: us-central1
+          credentials: '${{ secrets.gcp_credentials }}'
 
       - name: checkout
         uses: actions/checkout@v3
