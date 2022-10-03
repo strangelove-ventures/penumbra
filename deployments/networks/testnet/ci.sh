@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 WORKDIR=${WORKDIR:=$(pwd)/helm/pdcli}
 IMAGE=${IMAGE:=ghcr.io/strangelove-ventures/heighliner/penumbra}
 PENUMBRA_VERSION=${PENUMBRA_VERSION:=030-isonoe}
