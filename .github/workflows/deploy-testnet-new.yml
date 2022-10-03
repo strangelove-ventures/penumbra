@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 30
     environment: testnet
     steps:
-      - id: gcloud auth
+      - id: gcloudauth
         uses: google-github-actions/auth@v0
         with:
           credentials_json: '${{ secrets.gcp_credentials }}'
