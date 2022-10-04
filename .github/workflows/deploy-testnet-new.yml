@@ -32,6 +32,9 @@ jobs:
           workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
           service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
+      - name: checkout
+        uses: actions/checkout@v3
+
       - name: get gke credentials
         uses: google-github-actions/get-gke-credentials@v0
         with:
@@ -39,8 +42,7 @@ jobs:
           project_id: penumbra-sl-testnet
           location: us-central1
 
-      - name: checkout
-        uses: actions/checkout@v3
+
 
       - name: deploy 
         run: |-
