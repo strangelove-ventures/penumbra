@@ -18,6 +18,9 @@ on:
 
 jobs:
   deploy:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     name: Deploy to Testnet
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -26,7 +29,7 @@ jobs:
       - id: gcloudauth
         uses: google-github-actions/auth@v0
         with:
-          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/github-actions-pool/providers/my-provider'
+          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
           service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
       - name: get gke credentials
