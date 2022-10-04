@@ -15,6 +15,9 @@ mkdir -p "${WORKDIR}"
 
 echo "Shutting down existing testnet if necessary..."
 # Delete existing replication controllers
+# ls -last /home/socket/code/github/strangelove-ventures/penumbra/
+kubectl get pods
+exit 0
 kubectl delete rc --all --wait=false 2>&1 > /dev/null
 # Delete all existing PVCs so that fresh testnet is created
 kubectl delete pvc --all 2>&1 > /dev/null
