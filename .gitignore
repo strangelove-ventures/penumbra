@@ -32,3 +32,4 @@ target/
 
 # Python3
 .venv
+creds.json
