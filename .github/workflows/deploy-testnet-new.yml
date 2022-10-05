@@ -43,6 +43,8 @@ jobs:
         run: |-
           echo $KUBE_CONFIG_PATH
           ls -last $KUBE_CONFIG_PATH/
+          ls -last /home/runner/work/penumbra/
+          ls -last /home/runner/work/penumbra/penumbra/
           cd deployments/networks/testnet
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
