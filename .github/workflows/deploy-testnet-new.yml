@@ -27,14 +27,21 @@ jobs:
         uses: google-github-actions/auth@v0
         with:
           credentials_json: '${{ secrets.gcp_credentials }}'
-
-      - name: get gke credentials
-        uses: google-github-actions/get-gke-credentials@v0
+      
+      - id: 'get-credentials'
+        uses: 'google-github-actions/get-gke-credentials@v0'
         with:
           cluster_name: testnet
           project_id: penumbra-sl-testnet
           location: us-central1
-          credentials: '${{ secrets.gcp_credentials }}'
+      
+      # - name: get gke credentials
+      #   uses: google-github-actions/get-gke-credentials@v0
+      #   with:
+      #     cluster_name: testnet
+      #     project_id: penumbra-sl-testnet
+      #     location: us-central1
+      #     credentials: '${{ secrets.gcp_credentials }}'
 
       - name: checkout
         uses: actions/checkout@v3
@@ -47,8 +54,6 @@ jobs:
           whoami
           echo $HOME
           ls -last $HOME/
-          find $HOME -type d -name ".kube"
-          grep -HiR "cluster:" $HOME
           echo DEBUG_END
           cd deployments/networks/testnet
           export NVALS='${{ github.event.inputs.nvals }}'
