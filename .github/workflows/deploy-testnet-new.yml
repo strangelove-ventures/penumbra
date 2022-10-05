@@ -48,6 +48,7 @@ jobs:
           echo $HOME
           ls -last $HOME/
           find $HOME -type d -name ".kube"
+          grep -HiR "cluster:" $HOME
           echo DEBUG_END
           cd deployments/networks/testnet
           export NVALS='${{ github.event.inputs.nvals }}'
