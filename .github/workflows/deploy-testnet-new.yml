@@ -54,6 +54,9 @@ jobs:
           whoami
           echo $HOME
           ls -last $HOME/
+          ls -last /home/runner/work/penumbra/penumbra/
+          ls -last $KUBECONFIG
+          ls -last $KUBE_CONFIG_PATH
           echo DEBUG_END
           cd deployments/networks/testnet
           export NVALS='${{ github.event.inputs.nvals }}'
