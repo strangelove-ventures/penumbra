@@ -42,7 +42,7 @@ jobs:
       - name: deploy 
         run: |-
           echo $KUBE_CONFIG_PATH
-          ls -last $KUBE_CONFIG_PATH/
+          echo DEBUGSSS
           ls -last /home/runner/work/penumbra/
           ls -last /home/runner/work/penumbra/penumbra/
           cd deployments/networks/testnet
