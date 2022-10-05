@@ -41,8 +41,8 @@ jobs:
 
       - name: deploy 
         run: |-
-          echo $KUBECONFIG
-          ls -last $KUBECONFIG
+          echo $KUBE_CONFIG_PATH
+          ls -last $KUBE_CONFIG_PATH/
           cd deployments/networks/testnet
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
