@@ -44,9 +44,11 @@ jobs:
           echo $KUBE_CONFIG_PATH
           echo DEBUG_START
           pwd
-          find . -type f -name "docker-compose.multinode.override.yml"
+          whoami
+          echo $HOME
+          ls -last $HOME/
           echo DEBUG_END
-          find / -type d -name ".kube"
+          
           ls -last /home/runner/work/penumbra/
           ls -last /home/runner/work/penumbra/penumbra/
           cd deployments/networks/testnet
