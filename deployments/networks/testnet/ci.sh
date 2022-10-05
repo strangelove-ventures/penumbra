@@ -17,7 +17,7 @@ echo "Shutting down existing testnet if necessary..."
 # Delete existing replication controllers
 # ls -last /home/socket/code/github/strangelove-ventures/penumbra/
 kubectl get pods
-exit 0
+
 kubectl delete rc --all --wait=false 2>&1 > /dev/null
 # Delete all existing PVCs so that fresh testnet is created
 kubectl delete pvc --all 2>&1 > /dev/null
@@ -32,14 +32,26 @@ done
 
 find "$WORKDIR" -name "val.json" -exec cat {} + | jq -s > "$WORKDIR/vals.json"
 
-echo "Generating new testnet files..."
-docker run --user 0:0 \
--v "$WORKDIR":"$CONTAINERHOME" -it --rm \
---entrypoint pd \
-$IMAGE:$PENUMBRA_VERSION \
-testnet generate \
---validators-input-file "$CONTAINERHOME/vals.json" > /dev/null
+cat $WORKDIR/vals.json
+ls -last $WORKDIR/
 
+
+echo "DEBUG testnet files..."
+docker run \
+-v "$WORKDIR/":"/home/heighliner/pdcli/" -it --rm \
+--entrypoint ls \
+$IMAGE:$PENUMBRA_VERSION \
+-last /home/heighliner/pdcli/
+
+# echo "Generating new testnet files..."
+# docker run --user 0:0 \
+# -v "$WORKDIR":"$CONTAINERHOME" -it --rm \
+# --entrypoint pd \
+# $IMAGE:$PENUMBRA_VERSION \
+# testnet generate \
+# --validators-input-file "$CONTAINERHOME/vals.json"
+
+exit 0
 sudo chown -R "$(whoami)" "$WORKDIR"
 
 for i in $(seq $NVALS); do
@@ -74,6 +86,10 @@ done
 
 echo "$PERSISTENT_PEERS" > $WORKDIR/persistent_peers.txt
 echo "$PRIVATE_PEERS" > $WORKDIR/private_peers.txt
+
+cat $WORKDIR/persistent_peers.txt
+cat $WORKDIR/private_peers.txt
+exit 0
 
 helm get values $HELM_RELEASE 2>&1 > /dev/null
 if [ "$?" -eq "0" ]; then

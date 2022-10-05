@@ -18,9 +18,6 @@ on:
 
 jobs:
   deploy:
-    permissions:
-      contents: 'read'
-      id-token: 'write'
     name: Deploy to Testnet
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -29,11 +26,7 @@ jobs:
       - id: gcloudauth
         uses: google-github-actions/auth@v0
         with:
-          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
-          service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
-
-      - name: checkout
-        uses: actions/checkout@v3
+          credentials_json: '${{ secrets.gcp_credentials }}'
 
       - name: get gke credentials
         uses: google-github-actions/get-gke-credentials@v0
@@ -41,8 +34,10 @@ jobs:
           cluster_name: testnet
           project_id: penumbra-sl-testnet
           location: us-central1
+          credentials: '${{ secrets.gcp_credentials }}'
 
-
+      - name: checkout
+        uses: actions/checkout@v3
 
       - name: deploy 
         run: |-
@@ -50,5 +45,5 @@ jobs:
           export NVALS='${{ github.event.inputs.nvals }}'
           export NFULLNODES='${{ github.event.inputs.nfullnodes }}'
           export TENDERMINT_VERSION=v0.34.21
-          export PENUMBRA_VERSION=TODO
+          export PENUMBRA_VERSION=030-isonoe
           ./ci.sh
